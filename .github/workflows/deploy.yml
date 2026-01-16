@@ -41,7 +41,7 @@ jobs:
             --cpu 2 \
             --timeout 3600 \
             --max-instances 10 \
-            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GCP_PROJECT_ID=$PROJECT_ID
 
       - name: Show deployment URL
         run: |

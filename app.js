@@ -168,7 +168,7 @@ function formatFileSize(bytes) {
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// 音声アップロードと解析
+// 音声アップロードと解析（GCS経由）
 async function uploadAudio() {
     if (!selectedFile) {
         alert('ファイルを選択してください');
@@ -178,39 +178,69 @@ async function uploadAudio() {
     const token = localStorage.getItem('access_token');
     const uploadBtn = document.getElementById('uploadBtn');
     const progressSection = document.getElementById('uploadProgress');
-    
+
     try {
         uploadBtn.disabled = true;
         progressSection.classList.remove('hidden');
-        updateProgress(10, '音声ファイルをアップロード中...');
+        updateProgress(5, '署名付きURLを取得中...');
 
-        // FormDataの作成
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-        formData.append('created_date', metadata.created_date);
-        formData.append('creator', metadata.creator);
-        formData.append('customer_name', metadata.customer_name);
-        formData.append('meeting_place', metadata.meeting_place);
+        // ステップ1: 署名付きURLを取得
+        const signedUrlFormData = new FormData();
+        signedUrlFormData.append('filename', selectedFile.name);
+        signedUrlFormData.append('content_type', selectedFile.type || 'audio/*');
 
-        updateProgress(30, '音声ファイルを処理中...');
-
-        // APIリクエスト
-        const response = await fetch(`${API_BASE_URL}/api/upload`, {
+        const signedUrlResponse = await fetch(`${API_BASE_URL}/api/upload/signed-url`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`
             },
-            body: formData
+            body: signedUrlFormData
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'アップロードに失敗しました');
+        if (!signedUrlResponse.ok) {
+            const error = await signedUrlResponse.json();
+            throw new Error(error.detail || '署名付きURLの取得に失敗しました');
+        }
+
+        const { upload_url, filename } = await signedUrlResponse.json();
+
+        updateProgress(15, 'Google Cloud Storageにアップロード中...');
+
+        // ステップ2: GCSに直接アップロード
+        const uploadResponse = await fetch(upload_url, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': selectedFile.type || 'audio/*'
+            },
+            body: selectedFile
+        });
+
+        if (!uploadResponse.ok) {
+            throw new Error('ファイルのアップロードに失敗しました');
+        }
+
+        updateProgress(40, '音声ファイルを処理中...');
+
+        // ステップ3: バックエンドでファイルを処理
+        const processFormData = new FormData();
+        processFormData.append('filename', filename);
+
+        const processResponse = await fetch(`${API_BASE_URL}/api/process-gcs-file`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: processFormData
+        });
+
+        if (!processResponse.ok) {
+            const error = await processResponse.json();
+            throw new Error(error.detail || 'ファイル処理に失敗しました');
         }
 
         updateProgress(70, 'AIで解析中...');
 
-        const result = await response.json();
+        const result = await processResponse.json();
 
         updateProgress(100, '完了！');
 

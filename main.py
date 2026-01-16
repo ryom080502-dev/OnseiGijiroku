@@ -22,6 +22,7 @@ from audio_processor import AudioProcessor
 from gemini_service import GeminiService
 from auth_service import AuthService
 from document_generator import DocumentGenerator
+from gcs_service import GCSService
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -54,6 +55,17 @@ audio_processor = AudioProcessor()
 gemini_service = GeminiService()
 auth_service = AuthService()
 doc_generator = DocumentGenerator()
+
+# GCSサービスの初期化（GCP_PROJECT_IDが設定されている場合のみ）
+gcs_service = None
+if os.getenv("GCP_PROJECT_ID"):
+    try:
+        gcs_service = GCSService()
+        logger.info("GCSサービスを初期化しました")
+    except Exception as e:
+        logger.warning(f"GCSサービスの初期化に失敗: {str(e)}")
+else:
+    logger.info("GCP_PROJECT_IDが設定されていないため、GCSは無効です")
 
 # リクエスト/レスポンスモデル
 class LoginRequest(BaseModel):
@@ -148,20 +160,124 @@ async def login(request: LoginRequest):
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="ユーザー名またはパスワードが正しくありません"
             )
-        
+
         # JWTトークンの生成
         access_token = auth_service.create_access_token(
             data={"sub": user["username"]}
         )
-        
+
         return LoginResponse(access_token=access_token)
-    
+
     except Exception as e:
         logger.error(f"ログインエラー: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="ログイン処理中にエラーが発生しました"
         )
+
+@app.post("/api/upload/signed-url")
+async def get_upload_signed_url(
+    filename: str = Form(...),
+    content_type: str = Form("audio/*"),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    GCS署名付きURLを生成
+    クライアントはこのURLを使って直接GCSにファイルをアップロードする
+    """
+    if not gcs_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google Cloud Storageが利用できません"
+        )
+
+    try:
+        # ユニークなファイル名を生成
+        import uuid
+        unique_filename = f"{current_user}/{uuid.uuid4()}_{filename}"
+
+        # 署名付きURLを生成
+        signed_url = gcs_service.generate_upload_signed_url(unique_filename, content_type)
+
+        return {
+            "upload_url": signed_url,
+            "filename": unique_filename
+        }
+
+    except Exception as e:
+        logger.error(f"署名付きURL生成エラー: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"署名付きURLの生成に失敗しました: {str(e)}"
+        )
+
+@app.post("/api/process-gcs-file", response_model=MinutesResponse)
+async def process_gcs_file(
+    filename: str = Form(...),
+    current_user: str = Depends(get_current_user)
+):
+    """
+    GCSにアップロードされたファイルを処理して議事録を生成
+    """
+    if not gcs_service:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google Cloud Storageが利用できません"
+        )
+
+    temp_file_path = None
+
+    try:
+        logger.info(f"GCSファイル処理開始: {filename}")
+
+        # 一時ファイルにダウンロード
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".audio") as temp_file:
+            temp_file_path = temp_file.name
+
+        if not gcs_service.download_to_temp(filename, temp_file_path):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="ファイルが見つかりません"
+            )
+
+        # 音声ファイルを処理
+        processed_audio_path = audio_processor.process_audio(temp_file_path)
+
+        # Gemini APIで文字起こしと要約を生成
+        summary, confirmation_items, dynamic_title = gemini_service.transcribe_and_summarize(
+            processed_audio_path
+        )
+
+        # 処理済みファイルを削除
+        if processed_audio_path and os.path.exists(processed_audio_path):
+            os.remove(processed_audio_path)
+
+        # GCSからファイルを削除（オプション）
+        # gcs_service.delete_file(filename)
+
+        logger.info(f"GCSファイル処理完了: {filename}")
+
+        return MinutesResponse(
+            summary=summary,
+            confirmation_items=confirmation_items,
+            dynamic_title=dynamic_title
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"GCSファイル処理エラー: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"ファイル処理中にエラーが発生しました: {str(e)}"
+        )
+    finally:
+        # 一時ファイルのクリーンアップ
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except:
+                pass
 
 @app.post("/api/upload", response_model=MinutesResponse)
 async def upload_audio(

@@ -10,6 +10,7 @@ bcrypt
 # Google Cloud関連
 google-cloud-firestore
 google-generativeai
+google-cloud-storage
 
 # 音声処理
 pydub
