@@ -33,5 +33,5 @@ EXPOSE 8080
 ENV PORT=8080
 ENV PYTHONUNBUFFERED=1
 
-# uvicornでアプリケーションを起動
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# uvicornでアプリケーションを起動（200MBまでのファイルアップロードを許可）
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--limit-max-requests", "1000", "--timeout-keep-alive", "120"]

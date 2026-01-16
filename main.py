@@ -34,6 +34,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# ファイルアップロードサイズ制限を200MBに設定
+app.state.max_upload_size = 200 * 1024 * 1024  # 200MB
+
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
