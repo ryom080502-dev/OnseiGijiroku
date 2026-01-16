@@ -155,7 +155,7 @@ function handleFile(file) {
 
     // 30MB超の場合は自動分割の案内を表示
     if (file.size > cloudRunLimit) {
-        document.getElementById('fileSize').textContent = `${fileSizeText} (自動的に10分ごとに分割してアップロードします)`;
+        document.getElementById('fileSize').textContent = `${fileSizeText} (自動的に5分ごとに分割してアップロードします)`;
     }
 
     document.getElementById('fileInfo').classList.remove('hidden');
@@ -278,7 +278,7 @@ async function uploadSingleFile(file, token) {
     return await response.json();
 }
 
-// 音声ファイルを10分ごとに分割
+// 音声ファイルを5分ごとに分割（WAVファイルサイズを30MB以下に保つため）
 async function splitAudioFile(file) {
     try {
         const arrayBuffer = await file.arrayBuffer();
@@ -286,7 +286,7 @@ async function splitAudioFile(file) {
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
         const duration = audioBuffer.duration; // 秒
-        const segmentDuration = 10 * 60; // 10分 = 600秒
+        const segmentDuration = 5 * 60; // 5分 = 300秒（WAVファイルが30MB以下に収まるように）
         const numSegments = Math.ceil(duration / segmentDuration);
 
         console.log(`音声ファイル: ${duration}秒, ${numSegments}セグメントに分割`);
@@ -330,23 +330,38 @@ async function splitAudioFile(file) {
     }
 }
 
-// AudioBufferをWAVファイルに変換
+// AudioBufferをWAVファイルに変換（モノラル・16kHzで圧縮）
 async function audioBufferToWav(audioBuffer) {
-    const numChannels = audioBuffer.numberOfChannels;
-    const sampleRate = audioBuffer.sampleRate;
+    // モノラルに変換してサイズを削減
+    const numChannels = 1; // モノラル
+    const targetSampleRate = 16000; // 16kHz（音声認識に十分）
     const format = 1; // PCM
     const bitDepth = 16;
+
+    // ダウンサンプリング
+    const originalSampleRate = audioBuffer.sampleRate;
+    const sampleRateRatio = originalSampleRate / targetSampleRate;
+    const newLength = Math.floor(audioBuffer.length / sampleRateRatio);
+
+    // モノラルデータを作成（複数チャンネルの場合は平均化）
+    const monoData = new Float32Array(newLength);
+    for (let i = 0; i < newLength; i++) {
+        const originalIndex = Math.floor(i * sampleRateRatio);
+        let sum = 0;
+        for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+            sum += audioBuffer.getChannelData(channel)[originalIndex];
+        }
+        monoData[i] = sum / audioBuffer.numberOfChannels;
+    }
 
     const bytesPerSample = bitDepth / 8;
     const blockAlign = numChannels * bytesPerSample;
 
     const data = [];
-    for (let i = 0; i < audioBuffer.length; i++) {
-        for (let channel = 0; channel < numChannels; channel++) {
-            const sample = audioBuffer.getChannelData(channel)[i];
-            const int16 = Math.max(-1, Math.min(1, sample)) * 0x7FFF;
-            data.push(int16);
-        }
+    for (let i = 0; i < newLength; i++) {
+        const sample = monoData[i];
+        const int16 = Math.max(-1, Math.min(1, sample)) * 0x7FFF;
+        data.push(int16);
     }
 
     const dataLength = data.length * bytesPerSample;
@@ -367,8 +382,8 @@ async function audioBufferToWav(audioBuffer) {
     view.setUint32(16, 16, true); // fmt chunk size
     view.setUint16(20, format, true);
     view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint32(24, targetSampleRate, true);
+    view.setUint32(28, targetSampleRate * blockAlign, true);
     view.setUint16(32, blockAlign, true);
     view.setUint16(34, bitDepth, true);
     writeString(36, 'data');
