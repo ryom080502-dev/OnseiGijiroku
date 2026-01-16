@@ -286,7 +286,7 @@ async function splitAudioFile(file) {
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
         const duration = audioBuffer.duration; // 秒
-        const segmentDuration = 5 * 60; // 5分 = 300秒（WAVファイルが30MB以下に収まるように）
+        const segmentDuration = 10 * 60; // 10分 = 600秒（モノラル16kHz変換で30MB以下に収まる）
         const numSegments = Math.ceil(duration / segmentDuration);
 
         console.log(`音声ファイル: ${duration}秒, ${numSegments}セグメントに分割`);

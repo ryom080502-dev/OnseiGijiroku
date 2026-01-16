@@ -11,6 +11,7 @@ from typing import Optional, List
 import os
 import tempfile
 import logging
+import asyncio
 from datetime import datetime, timedelta
 import jwt
 from dotenv import load_dotenv
@@ -196,16 +197,20 @@ async def upload_audio(
             logger.info("音声ファイルの処理を開始")
             processed_files = audio_processor.process_audio(temp_file_path)
             
-            # Gemini APIで各セグメントを解析
-            logger.info(f"{len(processed_files)} 個のセグメントをGeminiで解析")
-            all_summaries = []
+            # Gemini APIで各セグメントを並列解析
+            logger.info(f"{len(processed_files)} 個のセグメントをGeminiで並列解析開始")
+
+            # 並列処理でGemini APIを呼び出し
+            tasks = [gemini_service.analyze_audio(audio_file) for audio_file in processed_files]
+            results = await asyncio.gather(*tasks)
+
+            # 結果を集約
+            all_summaries = [result["summary"] for result in results]
             all_confirmations = []
-            
-            for idx, audio_file in enumerate(processed_files):
-                logger.info(f"セグメント {idx + 1}/{len(processed_files)} を処理中")
-                result = await gemini_service.analyze_audio(audio_file)
-                all_summaries.append(result["summary"])
+            for result in results:
                 all_confirmations.extend(result["confirmation_items"])
+
+            logger.info(f"並列解析完了: {len(results)} セグメント")
             
             # 複数のセグメントがある場合は統合
             if len(all_summaries) > 1:
