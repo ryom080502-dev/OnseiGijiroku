@@ -24,7 +24,6 @@ COPY auth_service.py .
 COPY index.html .
 COPY dashboard.html .
 COPY app.js .
-COPY .env.example .env
 
 # ポート8080を公開
 EXPOSE 8080
