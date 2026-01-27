@@ -217,11 +217,37 @@ async def generate_upload_url(
         blob = bucket.blob(blob_name)
 
         # 署名付きURL生成（15分間有効）
+        # Cloud Run環境では、サービスアカウントのメールアドレスを明示的に指定
+        from google.auth import default as google_auth_default
+        credentials, _ = google_auth_default()
+
+        # サービスアカウントのメールアドレスを取得
+        service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL")
+        if not service_account_email:
+            # メタデータサーバーから取得（Cloud Run環境）
+            try:
+                import urllib.request
+                metadata_server = "http://metadata.google.internal/computeMetadata/v1/"
+                req = urllib.request.Request(
+                    metadata_server + 'instance/service-accounts/default/email',
+                    headers={'Metadata-Flavor': 'Google'}
+                )
+                with urllib.request.urlopen(req, timeout=2) as response:
+                    service_account_email = response.read().decode('utf-8')
+                logger.info(f"サービスアカウント取得: {service_account_email}")
+            except Exception as e:
+                logger.error(f"サービスアカウント取得エラー: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="サービスアカウントの取得に失敗しました"
+                )
+
         upload_url = blob.generate_signed_url(
             version="v4",
             expiration=timedelta(minutes=15),
             method="PUT",
-            content_type=request.content_type
+            content_type=request.content_type,
+            service_account_email=service_account_email
         )
 
         logger.info(f"署名付きURL生成成功: {blob_name}")
