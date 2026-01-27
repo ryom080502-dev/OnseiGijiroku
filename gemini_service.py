@@ -92,11 +92,12 @@ class GeminiService:
         self.merge_prompt = """あなたは注文住宅会社の優秀な営業アシスタントです。
 以下は同じ打合せを分割して記録した内容です。これを1つの読みやすい議事録にまとめてください。
 
-【重要な指示】
-・分割された記録の内容を全て確認し、重要な情報は漏らさず含めてください
-・重複する内容は1回のみ記載してください
+【最重要指示】
+・分割された記録の内容を「全て」確認し、話し合われた情報は「漏らさず全て」含めてください
+・重複する内容のみ1回にまとめ、それ以外は全て記載してください
 ・具体的な数字、品番、色、サイズなどの情報は必ず残してください
-・出力はA4用紙2枚程度（約2000〜2500文字）を目安にしてください
+・打合せの流れに沿って、時系列で記載してください
+・長くなっても構いません。情報を省略せず、詳細に記録することを最優先してください
 
 【出力形式】必ず以下の5セクション構成で出力してください。
 箇条書きには「・」のみ使用し、「*」「#」は使用しないでください。
@@ -110,6 +111,7 @@ class GeminiService:
 ・具体的な仕様、金額、サイズなどの情報を含める
 ・お客様の要望や質問も記載する
 ・営業からの説明や提案も記載する
+・セグメント間で話題が変わる場合は、全ての話題を記載する
 
 3. 決定事項
 この打合せで確定・決定したことを明確に箇条書きで記載
@@ -129,7 +131,8 @@ class GeminiService:
 【分割された記録】
 {summaries}
 
-上記の全ての記録内容を確認し、情報を漏らさないよう注意して議事録を作成してください。"""
+上記の全ての記録内容を確認し、情報を漏らさないよう注意して議事録を作成してください。
+繰り返しますが、情報の省略は避け、全ての内容を詳細に記載してください。"""
     
     async def analyze_audio(self, audio_file_path: str) -> str:
         """
@@ -185,7 +188,7 @@ class GeminiService:
                     [self.segment_prompt, audio_file],
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.3,  # 創造性を抑えて正確性を重視
-                        max_output_tokens=4096,
+                        max_output_tokens=8000,  # 出力トークン数を増やす（4096→8000）
                     )
                 )
             except Exception as e:
@@ -209,7 +212,9 @@ class GeminiService:
 
             # レスポンスのパース
             result_text = response.text
-            logger.info("解析完了")
+            logger.info(f"解析完了 - 文字数: {len(result_text)}")
+            logger.debug(f"解析結果の最初の200文字: {result_text[:200]}")
+            logger.debug(f"解析結果の最後の200文字: {result_text[-200:]}")
 
             # アップロードしたファイルを削除
             try:
@@ -252,17 +257,21 @@ class GeminiService:
             prompt = self.merge_prompt.format(summaries=numbered_summaries)
 
             logger.info("Gemini APIに統合リクエストを送信")
+            logger.info(f"プロンプトの文字数: {len(prompt)}")
 
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.2,  # より確実性を重視
-                    max_output_tokens=4000,  # A4 2枚程度（約2000-2500文字）に収める
+                    max_output_tokens=8000,  # 出力トークン数を増やす（4000→8000）
                 )
             )
 
             merged_summary = response.text
             logger.info(f"要約の統合完了 - 統合後の文字数: {len(merged_summary)}")
+
+            # レスポンスの最初の500文字をログ出力（デバッグ用）
+            logger.debug(f"統合結果の最初の500文字: {merged_summary[:500]}")
 
             return merged_summary.strip()
 

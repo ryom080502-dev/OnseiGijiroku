@@ -423,6 +423,11 @@ async function mergeResults(results) {
 
     console.log('各セグメントの要約文字数:', allSummaries.map(s => s.length));
 
+    // 各セグメントの最初の100文字を表示
+    allSummaries.forEach((summary, i) => {
+        console.log(`セグメント ${i + 1} の内容 (最初の100文字):`, summary.substring(0, 100));
+    });
+
     // サーバーAPIを呼び出して統合
     try {
         console.log('サーバーに統合リクエストを送信中...');
