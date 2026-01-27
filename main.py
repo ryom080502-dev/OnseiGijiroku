@@ -140,6 +140,15 @@ async def read_root():
     except FileNotFoundError:
         return HTMLResponse(content="<h1>Welcome to 議事録自動生成システム</h1><p>index.htmlが見つかりません</p>", status_code=404)
 
+@app.get("/index.html", response_class=HTMLResponse)
+async def read_index():
+    """index.htmlを表示"""
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Welcome to 議事録自動生成システム</h1><p>index.htmlが見つかりません</p>", status_code=404)
+
 @app.get("/dashboard.html", response_class=HTMLResponse)
 async def read_dashboard():
     """ダッシュボードページを表示"""
