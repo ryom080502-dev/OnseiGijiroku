@@ -30,15 +30,16 @@ class GeminiService:
             raise
 
         # モデルの設定
-        # Gemini 2.5/2.0は音声ファイルを直接処理できる
-        # v1beta APIで利用可能なモデルを優先順位順に試す
+        # 音声ファイルを直接処理できるモデルを優先順位順に試す
+        # 処理速度を重視し、Flashシリーズのみを使用
         model_names = [
-            "models/gemini-2.5-flash",      # Gemini 2.5 Flash (推奨)
-            "models/gemini-2.0-flash",      # Gemini 2.0 Flash
-            "models/gemini-flash-latest",   # 最新のFlashモデル
-            "models/gemini-2.5-pro",        # Gemini 2.5 Pro (高性能)
-            "models/gemini-pro-latest",     # 最新のProモデル
-            "gemini-pro",                   # フォールバック
+            "gemini-3-flash",                   # Gemini 3 Flash (最新・最優先)
+            "models/gemini-3-flash",            # Gemini 3 Flash (代替パス)
+            "gemini-3-flash-preview",           # Gemini 3 Flash Preview
+            "models/gemini-3-flash-preview",    # Gemini 3 Flash Preview (代替パス)
+            "models/gemini-2.5-flash",          # Gemini 2.5 Flash (高速・実績あり)
+            "models/gemini-2.5-flash-lite",     # Gemini 2.5 Flash-Lite (超高速・低コスト)
+            "models/gemini-flash-latest",       # 最新のFlashモデル (フォールバック)
         ]
 
         self.model_name = None
