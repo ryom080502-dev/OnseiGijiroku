@@ -236,19 +236,19 @@ async function generateUploadUrl(file, token) {
     return await response.json();
 }
 
-// GCSへ直接アップロード
+// GCSへ直接アップロード（resumable upload）
 async function uploadToGCS(uploadUrl, file) {
     console.log(`GCSへアップロード: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`);
 
+    // Resumable uploadではPUTメソッドを使用
     const response = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: {
-            'Content-Type': file.type || 'audio/mpeg'
-        },
         body: file
     });
 
-    if (!response.ok) {
+    if (!response.ok && response.status !== 308) {
+        const errorText = await response.text();
+        console.error('GCSアップロードエラー:', errorText);
         throw new Error(`GCSアップロードに失敗しました (ステータス: ${response.status})`);
     }
 
