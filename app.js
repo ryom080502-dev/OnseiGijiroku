@@ -328,10 +328,20 @@ function updateProgress(percent, message) {
     document.getElementById('progressMessage').textContent = message;
 }
 
+// Markdown記号を変換する関数
+function convertMarkdownSymbols(text) {
+    // **テキスト** → 【テキスト】
+    text = text.replace(/\*\*(.+?)\*\*/g, '【$1】');
+    // ## テキスト → テキスト（行頭の##を削除）
+    text = text.replace(/^##\s*/gm, '');
+    return text;
+}
+
 // 解析結果の表示
 function displayResults(result) {
-    // 議事録をテキストエリアに表示
-    document.getElementById('summaryText').value = result.summary;
+    // Markdown記号を変換してから表示
+    const convertedSummary = convertMarkdownSymbols(result.summary);
+    document.getElementById('summaryText').value = convertedSummary;
 
     // ステップ3へ移動
     document.getElementById('uploadSection').classList.add('hidden');

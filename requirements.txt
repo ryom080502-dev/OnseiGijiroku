@@ -21,6 +21,7 @@ pydub
 # ドキュメント生成
 python-docx
 reportlab
+fpdf2
 
 # ユーティリティ
 python-dotenv
