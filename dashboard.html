@@ -4,199 +4,846 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>議事録自動生成システム - ダッシュボード</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
+        :root {
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-200: #bfdbfe;
+            --primary-300: #93c5fd;
+            --primary-400: #60a5fa;
+            --primary-500: #3b82f6;
+            --primary-600: #2563eb;
+            --primary-700: #1d4ed8;
+            --primary-800: #1e40af;
+            --primary-900: #1e3a8a;
+            --navy: #0f172a;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --success-500: #22c55e;
+            --success-600: #16a34a;
+            --danger-500: #ef4444;
+            --danger-600: #dc2626;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(180deg, var(--primary-50) 0%, #ffffff 30%, var(--slate-50) 100%);
+            color: var(--slate-800);
+        }
+
+        /* ヘッダー */
+        .header {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--slate-200);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.875rem;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.3);
+        }
+
+        .logo-icon i {
+            font-size: 1.25rem;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--navy);
+            letter-spacing: -0.02em;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--slate-600);
+            font-size: 0.9rem;
+        }
+
+        .user-info i {
+            color: var(--primary-500);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: inherit;
+            color: var(--danger-500);
+            background: transparent;
+            border: 1px solid var(--danger-500);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--danger-500);
+            color: white;
+        }
+
+        /* メインコンテンツ */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* ステップインジケーター */
+        .steps-container {
+            margin-bottom: 2.5rem;
+        }
+
+        .steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.125rem;
+            transition: all 0.3s ease;
+            border: 3px solid var(--slate-300);
+            background: white;
+            color: var(--slate-400);
+        }
+
+        .step.active .step-number {
+            border-color: var(--primary-500);
+            background: var(--primary-500);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(37, 99, 235, 0.4);
+        }
+
+        .step.completed .step-number {
+            border-color: var(--success-500);
+            background: var(--success-500);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            color: var(--slate-400);
+            transition: color 0.3s ease;
+        }
+
+        .step.active .step-label,
+        .step.completed .step-label {
+            color: var(--slate-700);
+        }
+
+        .step-connector {
+            width: 80px;
+            height: 3px;
+            background: var(--slate-200);
+            margin: 0 1rem;
+            border-radius: 2px;
+            transition: background 0.3s ease;
+        }
+
+        .step-connector.completed {
+            background: var(--success-500);
+        }
+
+        /* カード */
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow:
+                0 1px 3px rgba(0, 0, 0, 0.04),
+                0 4px 12px rgba(0, 0, 0, 0.06);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--slate-100);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+        }
+
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary-100);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-icon i {
+            font-size: 1.125rem;
+            color: var(--primary-600);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--navy);
+        }
+
+        /* フォーム */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+
+        .form-input {
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            border: 2px solid var(--slate-200);
+            border-radius: 12px;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            transition: all 0.2s ease;
+        }
+
+        .form-input::placeholder {
+            color: var(--slate-400);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* 動的タイトル */
+        .dynamic-title-box {
+            margin-top: 1.75rem;
+            padding: 1.25rem;
+            background: linear-gradient(135deg, var(--primary-50) 0%, var(--primary-100) 100%);
+            border: 1px solid var(--primary-200);
+            border-radius: 12px;
+        }
+
+        .dynamic-title-label {
+            font-size: 0.8125rem;
+            color: var(--slate-500);
+            margin-bottom: 0.375rem;
+        }
+
+        .dynamic-title-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary-800);
+        }
+
+        /* ボタン */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: inherit;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -3px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-primary:disabled {
+            background: var(--slate-300);
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--slate-100);
+            color: var(--slate-700);
+            border: 1px solid var(--slate-200);
+        }
+
+        .btn-secondary:hover {
+            background: var(--slate-200);
+        }
+
+        .btn-word {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-word:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -3px rgba(37, 99, 235, 0.5);
+        }
+
+        .btn-pdf {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-pdf:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px -3px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.75rem;
+        }
+
+        .btn-group-full {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 640px) {
+            .btn-group-full {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ドロップゾーン */
         .drop-zone {
-            border: 3px dashed #cbd5e0;
-            transition: all 0.3s;
+            border: 3px dashed var(--slate-300);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--slate-50);
         }
+
+        .drop-zone:hover {
+            border-color: var(--primary-400);
+            background: var(--primary-50);
+        }
+
         .drop-zone.dragover {
-            border-color: #4f46e5;
-            background-color: #eef2ff;
+            border-color: var(--primary-500);
+            background: var(--primary-100);
+            transform: scale(1.01);
         }
+
+        .drop-zone-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+
+        .drop-zone-icon i {
+            font-size: 2.5rem;
+            color: var(--primary-500);
+        }
+
+        .drop-zone-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--slate-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .drop-zone-or {
+            color: var(--slate-400);
+            margin-bottom: 1rem;
+        }
+
+        .drop-zone-hint {
+            font-size: 0.8125rem;
+            color: var(--slate-400);
+            margin-top: 1rem;
+        }
+
+        /* ファイル情報 */
+        .file-info {
+            display: none;
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: 12px;
+        }
+
+        .file-info.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-100);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .file-icon i {
+            font-size: 1.5rem;
+            color: var(--primary-600);
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--slate-800);
+        }
+
+        .file-size {
+            font-size: 0.875rem;
+            color: var(--slate-500);
+        }
+
+        .file-remove {
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: none;
+            color: var(--danger-500);
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .file-remove:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .file-remove i {
+            font-size: 1.25rem;
+        }
+
+        /* プログレス */
+        .progress-container {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+
+        .progress-percent {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--primary-600);
+        }
+
+        .progress-bar-bg {
+            height: 10px;
+            background: var(--slate-200);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
         .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-500) 0%, var(--primary-400) 100%);
+            border-radius: 5px;
             transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-message {
+            font-size: 0.875rem;
+            color: var(--slate-500);
+            margin-top: 0.75rem;
+        }
+
+        /* テキストエリア */
+        .textarea {
+            width: 100%;
+            padding: 1rem;
+            font-size: 0.9375rem;
+            font-family: 'SF Mono', Monaco, Consolas, 'Noto Sans JP', monospace;
+            line-height: 1.7;
+            border: 2px solid var(--slate-200);
+            border-radius: 12px;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            resize: vertical;
+            transition: all 0.2s ease;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .textarea-hint {
+            font-size: 0.8125rem;
+            color: var(--slate-500);
+            margin-bottom: 1rem;
+        }
+
+        /* エクスポートセクション */
+        .export-section {
+            margin-top: 1.5rem;
+        }
+
+        .export-section .card-header {
+            margin-bottom: 1.25rem;
+        }
+
+        .reset-btn {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        /* ユーティリティ */
+        .hidden {
+            display: none !important;
+        }
+
+        .mt-4 {
+            margin-top: 1rem;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body>
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <i class="fas fa-file-audio text-3xl text-indigo-600"></i>
-                <h1 class="text-2xl font-bold text-gray-800">議事録自動生成システム</h1>
+    <header class="header">
+        <div class="header-inner">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-microphone-lines"></i>
+                </div>
+                <span class="logo-text">議事録自動生成</span>
             </div>
-            <div class="flex items-center space-x-4">
-                <span class="text-gray-600">
-                    <i class="fas fa-user-circle mr-2"></i>
+            <div class="header-actions">
+                <div class="user-info">
+                    <i class="fas fa-user-circle"></i>
                     <span id="currentUser"></span>
-                </span>
-                <button onclick="logout()" class="text-red-600 hover:text-red-700 font-semibold">
-                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                </div>
+                <button onclick="logout()" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    ログアウト
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="main-content">
         <!-- ステップインジケーター -->
-        <div class="mb-8">
-            <div class="flex items-center justify-between">
-                <div class="flex-1">
-                    <div class="flex items-center">
-                        <div id="step1" class="flex items-center text-indigo-600">
-                            <div class="rounded-full h-12 w-12 flex items-center justify-center border-2 border-indigo-600 bg-indigo-600 text-white font-bold">1</div>
-                            <div class="ml-4 font-semibold">メタデータ入力</div>
-                        </div>
-                        <div class="flex-1 h-1 bg-gray-300 mx-4"></div>
-                    </div>
+        <div class="steps-container">
+            <div class="steps">
+                <div id="step1" class="step active">
+                    <div class="step-number">1</div>
+                    <span class="step-label">会議情報</span>
                 </div>
-                <div class="flex-1">
-                    <div class="flex items-center">
-                        <div id="step2" class="flex items-center text-gray-400">
-                            <div class="rounded-full h-12 w-12 flex items-center justify-center border-2 border-gray-300 font-bold">2</div>
-                            <div class="ml-4 font-semibold">音声アップロード</div>
-                        </div>
-                        <div class="flex-1 h-1 bg-gray-300 mx-4"></div>
-                    </div>
+                <div id="connector1" class="step-connector"></div>
+                <div id="step2" class="step">
+                    <div class="step-number">2</div>
+                    <span class="step-label">音声アップロード</span>
                 </div>
-                <div class="flex-1">
-                    <div class="flex items-center">
-                        <div id="step3" class="flex items-center text-gray-400">
-                            <div class="rounded-full h-12 w-12 flex items-center justify-center border-2 border-gray-300 font-bold">3</div>
-                            <div class="ml-4 font-semibold">編集・確認</div>
-                        </div>
-                    </div>
+                <div id="connector2" class="step-connector"></div>
+                <div id="step3" class="step">
+                    <div class="step-number">3</div>
+                    <span class="step-label">編集・出力</span>
                 </div>
             </div>
         </div>
 
         <!-- ステップ1: メタデータ入力 -->
-        <div id="metadataSection" class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-xl font-bold text-gray-800 mb-6">
-                <i class="fas fa-info-circle mr-2 text-indigo-600"></i>会議情報の入力
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">作成日</label>
-                    <input type="date" id="createdDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" required>
+        <div id="metadataSection" class="card">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">作成者</label>
-                    <input type="text" id="creator" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="山田太郎" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">お客様名</label>
-                    <input type="text" id="customerName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="株式会社A" required>
-                </div>
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">打合せ場所</label>
-                    <input type="text" id="meetingPlace" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="会議室1" required>
-                </div>
-            </div>
-            
-            <!-- 動的タイトル表示 -->
-            <div class="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <p class="text-sm text-gray-600 mb-1">自動生成されるタイトル:</p>
-                <p id="dynamicTitle" class="text-lg font-semibold text-indigo-800"></p>
+                <h2 class="card-title">会議情報の入力</h2>
             </div>
 
-            <button onclick="goToStep2()" class="mt-6 bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition font-semibold">
-                次へ <i class="fas fa-arrow-right ml-2"></i>
-            </button>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label" for="createdDate">作成日</label>
+                    <input type="date" id="createdDate" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="creator">作成者</label>
+                    <input type="text" id="creator" class="form-input" placeholder="例: 山田太郎" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="customerName">お客様名</label>
+                    <input type="text" id="customerName" class="form-input" placeholder="例: 株式会社A" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="meetingPlace">打合せ場所</label>
+                    <input type="text" id="meetingPlace" class="form-input" placeholder="例: 会議室1" required>
+                </div>
+            </div>
+
+            <div class="dynamic-title-box">
+                <p class="dynamic-title-label">自動生成されるタイトル</p>
+                <p id="dynamicTitle" class="dynamic-title-value"></p>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="goToStep2()" class="btn btn-primary">
+                    次へ進む
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
         </div>
 
         <!-- ステップ2: 音声アップロード -->
-        <div id="uploadSection" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-            <h2 class="text-xl font-bold text-gray-800 mb-6">
-                <i class="fas fa-cloud-upload-alt mr-2 text-indigo-600"></i>音声ファイルのアップロード
-            </h2>
-            
-            <!-- ドラッグ&ドロップエリア -->
-            <div id="dropZone" class="drop-zone rounded-lg p-12 text-center cursor-pointer">
-                <i class="fas fa-file-audio text-6xl text-gray-400 mb-4"></i>
-                <p class="text-lg font-semibold text-gray-700 mb-2">音声ファイルをドラッグ＆ドロップ</p>
-                <p class="text-gray-500 mb-4">または</p>
-                <button type="button" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">
+        <div id="uploadSection" class="card hidden">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-cloud-arrow-up"></i>
+                </div>
+                <h2 class="card-title">音声ファイルのアップロード</h2>
+            </div>
+
+            <div id="dropZone" class="drop-zone">
+                <div class="drop-zone-icon">
+                    <i class="fas fa-waveform-lines"></i>
+                </div>
+                <p class="drop-zone-title">音声ファイルをドラッグ＆ドロップ</p>
+                <p class="drop-zone-or">または</p>
+                <button type="button" class="btn btn-primary">
+                    <i class="fas fa-folder-open"></i>
                     ファイルを選択
                 </button>
                 <input type="file" id="audioFile" accept="audio/*,video/*" class="hidden">
-                <p class="text-sm text-gray-400 mt-4">対応形式: MP3, WAV, M4A, MP4など（最大500MB、30MB超は3分ごとに自動分割）</p>
+                <p class="drop-zone-hint">対応形式: MP3, WAV, M4A, MP4など（最大500MB）</p>
             </div>
 
-            <!-- 選択されたファイル情報 -->
-            <div id="fileInfo" class="hidden mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <i class="fas fa-file-audio text-2xl text-indigo-600"></i>
-                        <div>
-                            <p id="fileName" class="font-semibold text-gray-800"></p>
-                            <p id="fileSize" class="text-sm text-gray-600"></p>
-                        </div>
+            <div id="fileInfo" class="file-info">
+                <div class="file-info-left">
+                    <div class="file-icon">
+                        <i class="fas fa-file-audio"></i>
                     </div>
-                    <button onclick="clearFile()" class="text-red-600 hover:text-red-700">
-                        <i class="fas fa-times-circle text-2xl"></i>
-                    </button>
+                    <div>
+                        <p id="fileName" class="file-name"></p>
+                        <p id="fileSize" class="file-size"></p>
+                    </div>
                 </div>
-            </div>
-
-            <!-- アップロード進捗 -->
-            <div id="uploadProgress" class="hidden mt-6">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-sm font-semibold text-gray-700">処理中...</span>
-                    <span id="progressPercent" class="text-sm font-semibold text-indigo-600">0%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3">
-                    <div id="progressBar" class="progress-bar bg-indigo-600 h-3 rounded-full" style="width: 0%"></div>
-                </div>
-                <p id="progressMessage" class="text-sm text-gray-600 mt-2"></p>
-            </div>
-
-            <div class="mt-6 flex space-x-4">
-                <button onclick="goToStep1()" class="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 transition font-semibold">
-                    <i class="fas fa-arrow-left mr-2"></i>戻る
+                <button onclick="clearFile()" class="file-remove">
+                    <i class="fas fa-times"></i>
                 </button>
-                <button id="uploadBtn" onclick="uploadAudio()" disabled class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed">
-                    アップロードして解析 <i class="fas fa-arrow-right ml-2"></i>
+            </div>
+
+            <div id="uploadProgress" class="progress-container">
+                <div class="progress-header">
+                    <span class="progress-label">処理中...</span>
+                    <span id="progressPercent" class="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div id="progressBar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <p id="progressMessage" class="progress-message"></p>
+            </div>
+
+            <div class="btn-group">
+                <button onclick="goToStep1()" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    戻る
+                </button>
+                <button id="uploadBtn" onclick="uploadAudio()" disabled class="btn btn-primary">
+                    アップロードして解析
+                    <i class="fas fa-wand-magic-sparkles"></i>
                 </button>
             </div>
         </div>
 
         <!-- ステップ3: 編集・確認 -->
         <div id="editSection" class="hidden">
-            <!-- 議事録 -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-edit mr-2 text-indigo-600"></i>議事録の編集
-                </h2>
-                <p class="text-sm text-gray-600 mb-3">
-                    音声解析の結果を確認し、必要に応じて編集してください。確認事項も含めて全ての内容が表示されています。
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+                    <h2 class="card-title">議事録の編集</h2>
+                </div>
+                <p class="textarea-hint">
+                    音声解析の結果を確認し、必要に応じて編集してください。
                 </p>
-                <textarea id="summaryText" rows="20" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 font-mono text-sm"></textarea>
+                <textarea id="summaryText" rows="20" class="textarea"></textarea>
             </div>
 
-            <!-- エクスポート -->
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-4">
-                    <i class="fas fa-download mr-2 text-indigo-600"></i>エクスポート
-                </h2>
-                <div class="flex space-x-4">
-                    <button onclick="exportDocument('word')" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">
-                        <i class="fas fa-file-word mr-2"></i>Word形式でダウンロード
+            <div class="card export-section">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h2 class="card-title">ファイル出力</h2>
+                </div>
+                <div class="btn-group-full">
+                    <button onclick="exportDocument('word')" class="btn btn-word">
+                        <i class="fas fa-file-word"></i>
+                        Word形式でダウンロード
                     </button>
-                    <button onclick="exportDocument('pdf')" class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition font-semibold">
-                        <i class="fas fa-file-pdf mr-2"></i>PDF形式でダウンロード
+                    <button onclick="exportDocument('pdf')" class="btn btn-pdf">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF形式でダウンロード
                     </button>
                 </div>
-                <button onclick="resetForm()" class="w-full mt-4 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 transition font-semibold">
-                    <i class="fas fa-redo mr-2"></i>新規作成
+                <button onclick="resetForm()" class="btn btn-secondary reset-btn">
+                    <i class="fas fa-rotate"></i>
+                    新規作成
                 </button>
             </div>
         </div>
     </main>
 
-    <script src="app.js?v=20260129a"></script>
+    <script src="app.js?v=20260129b"></script>
 </body>
 </html>

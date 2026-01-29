@@ -103,22 +103,33 @@ function goToStep1() {
     updateStepIndicator(1);
 }
 
-function updateStepIndicator(step) {
-    const steps = [1, 2, 3];
-    steps.forEach(s => {
-        const element = document.getElementById(`step${s}`);
-        if (s <= step) {
-            element.querySelector('div').classList.remove('border-gray-300', 'text-gray-400');
-            element.querySelector('div').classList.add('border-indigo-600', 'bg-indigo-600', 'text-white');
-            element.classList.remove('text-gray-400');
-            element.classList.add('text-indigo-600');
-        } else {
-            element.querySelector('div').classList.add('border-gray-300');
-            element.querySelector('div').classList.remove('border-indigo-600', 'bg-indigo-600', 'text-white');
-            element.classList.add('text-gray-400');
-            element.classList.remove('text-indigo-600');
+function updateStepIndicator(currentStep) {
+    // ステップの状態を更新
+    [1, 2, 3].forEach(s => {
+        const stepElement = document.getElementById(`step${s}`);
+
+        // クラスをリセット
+        stepElement.classList.remove('active', 'completed');
+
+        if (s < currentStep) {
+            // 完了したステップ
+            stepElement.classList.add('completed');
+        } else if (s === currentStep) {
+            // 現在のステップ
+            stepElement.classList.add('active');
         }
     });
+
+    // コネクターの状態を更新
+    const connector1 = document.getElementById('connector1');
+    const connector2 = document.getElementById('connector2');
+
+    if (connector1) {
+        connector1.classList.toggle('completed', currentStep > 1);
+    }
+    if (connector2) {
+        connector2.classList.toggle('completed', currentStep > 2);
+    }
 }
 
 // ファイル処理
@@ -151,14 +162,14 @@ function handleFile(file) {
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileSize').textContent = fileSizeText;
 
-    document.getElementById('fileInfo').classList.remove('hidden');
+    document.getElementById('fileInfo').classList.add('show');
     document.getElementById('uploadBtn').disabled = false;
 }
 
 function clearFile() {
     selectedFile = null;
     document.getElementById('audioFile').value = '';
-    document.getElementById('fileInfo').classList.add('hidden');
+    document.getElementById('fileInfo').classList.remove('show');
     document.getElementById('uploadBtn').disabled = true;
 }
 
@@ -183,7 +194,7 @@ async function uploadAudio() {
 
     try {
         uploadBtn.disabled = true;
-        progressSection.classList.remove('hidden');
+        progressSection.classList.add('show');
 
         // ステップ1: 署名付きURLを取得
         updateProgress(5, '署名付きURLを取得中...');
@@ -208,7 +219,7 @@ async function uploadAudio() {
         console.error('Upload error:', error);
         alert(`エラーが発生しました: ${error.message}`);
         uploadBtn.disabled = false;
-        progressSection.classList.add('hidden');
+        progressSection.classList.remove('show');
     }
 }
 
