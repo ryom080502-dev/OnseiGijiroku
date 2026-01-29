@@ -8,6 +8,8 @@ from fpdf import FPDF
 import tempfile
 import os
 import logging
+import re
+import glob
 from typing import Dict
 from datetime import datetime
 
@@ -23,7 +25,7 @@ class JapanesePDF(FPDF):
 
     def _setup_japanese_font(self):
         """日本語フォントを設定"""
-        # Windowsの日本語フォントパス
+        # 日本語フォントパス（各OS用）
         font_paths = [
             # Windows
             ("C:\\Windows\\Fonts\\msgothic.ttc", "MSGothic"),
@@ -33,9 +35,14 @@ class JapanesePDF(FPDF):
             # macOS
             ("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc", "Hiragino"),
             ("/Library/Fonts/Arial Unicode.ttf", "ArialUnicode"),
-            # Linux
+            # Linux (Debian/Ubuntu fonts-noto-cjk)
             ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "NotoSansCJK"),
             ("/usr/share/fonts/truetype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK"),
+            ("/usr/share/fonts/opentype/noto-cjk/NotoSansCJK-Regular.ttc", "NotoSansCJK"),
+            ("/usr/share/fonts/truetype/noto-cjk/NotoSansCJKjp-Regular.ttf", "NotoSansCJK"),
+            # Linux (fonts-noto-cjk package variations)
+            ("/usr/share/fonts/opentype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK"),
+            ("/usr/share/fonts/truetype/noto/NotoSansCJK.ttc", "NotoSansCJK"),
         ]
 
         for font_path, font_name in font_paths:
@@ -47,6 +54,25 @@ class JapanesePDF(FPDF):
                     return
                 except Exception as e:
                     logger.debug(f"フォント登録失敗: {font_path} - {str(e)}")
+                    continue
+
+        # フォントが見つからない場合、globで検索
+        search_patterns = [
+            "/usr/share/fonts/**/NotoSans*CJK*.ttc",
+            "/usr/share/fonts/**/NotoSans*CJK*.otf",
+            "/usr/share/fonts/**/NotoSans*CJK*.ttf",
+        ]
+        for pattern in search_patterns:
+            found_fonts = glob.glob(pattern, recursive=True)
+            if found_fonts:
+                font_path = found_fonts[0]
+                try:
+                    self.add_font("NotoSansCJK", "", font_path, uni=True)
+                    self.font_name = "NotoSansCJK"
+                    logger.info(f"日本語フォント登録成功（glob検索）: {font_path}")
+                    return
+                except Exception as e:
+                    logger.debug(f"フォント登録失敗（glob検索）: {font_path} - {str(e)}")
                     continue
 
         # フォントが見つからない場合
@@ -71,7 +97,6 @@ class DocumentGenerator:
         Markdown記号を日本語形式に変換
         **テキスト** → 【テキスト】
         """
-        import re
         # **テキスト** → 【テキスト】
         text = re.sub(r'\*\*(.+?)\*\*', r'【\1】', text)
         return text
@@ -131,10 +156,13 @@ class DocumentGenerator:
                 if not line:
                     continue
 
-                # セクションヘッダーの判定（##で始まる）
+                # セクションヘッダーの判定（##で始まる、または「1. 」〜「9. 」で始まる）
                 if line.startswith('##'):
                     heading_text = line.replace('##', '').strip()
                     doc.add_heading(heading_text, level=2)
+                elif re.match(r'^[1-9]\.\s', line):
+                    # 「1. 打合せ概要」のような形式
+                    doc.add_heading(line, level=2)
                 # 箇条書きの判定（・、•、-、* で始まる）
                 elif line.startswith(('・', '• ', '- ', '* ')):
                     # 箇条書き記号を除去
@@ -223,13 +251,21 @@ class DocumentGenerator:
                     pdf.ln(3)
                     continue
 
-                # ## で始まる行は大見出し
+                # ## で始まる行、または「1. 」〜「9. 」で始まる行は大見出し
                 if line.startswith('##'):
                     heading_text = line.replace('##', '').strip()
                     pdf.ln(5)
                     pdf.set_japanese_font(14)
                     pdf.set_text_color(44, 62, 80)
                     pdf.multi_cell(0, 8, heading_text)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.ln(2)
+                elif re.match(r'^[1-9]\.\s', line):
+                    # 「1. 打合せ概要」のような形式
+                    pdf.ln(5)
+                    pdf.set_japanese_font(14)
+                    pdf.set_text_color(44, 62, 80)
+                    pdf.multi_cell(0, 8, line)
                     pdf.set_text_color(0, 0, 0)
                     pdf.ln(2)
 
