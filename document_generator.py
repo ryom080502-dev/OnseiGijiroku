@@ -231,7 +231,7 @@ class DocumentGenerator:
 
             # タイトル
             pdf.set_japanese_font(20)
-            pdf.cell(0, 15, '議事録', new_x="LMARGIN", new_y="NEXT", align='C')
+            pdf.cell(0, 15, '議事録', ln=True, align='C')
             pdf.ln(10)
 
             # メタデータ
@@ -246,8 +246,8 @@ class DocumentGenerator:
 
             for label, value in meta_items:
                 pdf.set_japanese_font(9)
-                pdf.cell(30, 6, f"{label}:", new_x="RIGHT", new_y="TOP")
-                pdf.cell(0, 6, value, new_x="LMARGIN", new_y="NEXT")
+                pdf.cell(30, 6, f"{label}:", ln=False)
+                pdf.cell(0, 6, value, ln=True)
 
             pdf.ln(10)
             pdf.set_text_color(0, 0, 0)
@@ -299,7 +299,7 @@ class DocumentGenerator:
             pdf.set_japanese_font(9)
             pdf.set_text_color(128, 128, 128)
             footer_text = f"作成日時: {datetime.now().strftime('%Y年%m月%d日 %H:%M')}"
-            pdf.cell(0, 6, footer_text, new_x="LMARGIN", new_y="NEXT", align='C')
+            pdf.cell(0, 6, footer_text, ln=True, align='C')
 
             # PDF保存
             pdf.output(output_path)
