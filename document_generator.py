@@ -35,14 +35,13 @@ class JapanesePDF(FPDF):
             # macOS
             ("/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc", "Hiragino"),
             ("/Library/Fonts/Arial Unicode.ttf", "ArialUnicode"),
-            # Linux (Debian/Ubuntu fonts-noto-cjk)
+            # Linux (Debian/Ubuntu fonts-noto-cjk) - 優先順位順
             ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", "NotoSansCJK"),
+            ("/usr/share/fonts/opentype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK"),
             ("/usr/share/fonts/truetype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK"),
+            ("/usr/share/fonts/truetype/noto/NotoSansCJK.ttc", "NotoSansCJK"),
             ("/usr/share/fonts/opentype/noto-cjk/NotoSansCJK-Regular.ttc", "NotoSansCJK"),
             ("/usr/share/fonts/truetype/noto-cjk/NotoSansCJKjp-Regular.ttf", "NotoSansCJK"),
-            # Linux (fonts-noto-cjk package variations)
-            ("/usr/share/fonts/opentype/noto/NotoSansCJKjp-Regular.otf", "NotoSansCJK"),
-            ("/usr/share/fonts/truetype/noto/NotoSansCJK.ttc", "NotoSansCJK"),
         ]
 
         for font_path, font_name in font_paths:
@@ -53,7 +52,7 @@ class JapanesePDF(FPDF):
                     logger.info(f"日本語フォント登録成功: {font_path}")
                     return
                 except Exception as e:
-                    logger.debug(f"フォント登録失敗: {font_path} - {str(e)}")
+                    logger.warning(f"フォント登録失敗: {font_path} - {str(e)}")
                     continue
 
         # フォントが見つからない場合、globで検索
@@ -61,22 +60,28 @@ class JapanesePDF(FPDF):
             "/usr/share/fonts/**/NotoSans*CJK*.ttc",
             "/usr/share/fonts/**/NotoSans*CJK*.otf",
             "/usr/share/fonts/**/NotoSans*CJK*.ttf",
+            "/usr/share/fonts/**/*Gothic*.ttc",
+            "/usr/share/fonts/**/*gothic*.ttc",
         ]
         for pattern in search_patterns:
-            found_fonts = glob.glob(pattern, recursive=True)
-            if found_fonts:
-                font_path = found_fonts[0]
-                try:
-                    self.add_font("NotoSansCJK", "", font_path, uni=True)
-                    self.font_name = "NotoSansCJK"
-                    logger.info(f"日本語フォント登録成功（glob検索）: {font_path}")
-                    return
-                except Exception as e:
-                    logger.debug(f"フォント登録失敗（glob検索）: {font_path} - {str(e)}")
-                    continue
+            try:
+                found_fonts = glob.glob(pattern, recursive=True)
+                if found_fonts:
+                    font_path = found_fonts[0]
+                    try:
+                        self.add_font("JapaneseFont", "", font_path, uni=True)
+                        self.font_name = "JapaneseFont"
+                        logger.info(f"日本語フォント登録成功（glob検索）: {font_path}")
+                        return
+                    except Exception as e:
+                        logger.warning(f"フォント登録失敗（glob検索）: {font_path} - {str(e)}")
+                        continue
+            except Exception as e:
+                logger.warning(f"glob検索エラー: {pattern} - {str(e)}")
+                continue
 
         # フォントが見つからない場合
-        logger.warning("日本語フォントが見つかりません。デフォルトフォントを使用します")
+        logger.error("日本語フォントが見つかりません。PDF生成に失敗する可能性があります。")
         self.font_name = None
 
     def set_japanese_font(self, size=10):
@@ -84,6 +89,7 @@ class JapanesePDF(FPDF):
         if self.font_name:
             self.set_font(self.font_name, size=size)
         else:
+            # フォントがない場合はHelveticaを使用（日本語は表示できない）
             self.set_font("Helvetica", size=size)
 
 
@@ -207,34 +213,41 @@ class DocumentGenerator:
         """
         try:
             logger.info("PDF文書の生成を開始")
+            logger.info(f"metadata: {metadata}")
 
             # 一時ファイルパス
             output_path = tempfile.mktemp(suffix=".pdf")
 
             # PDF作成
-            pdf = JapanesePDF()
+            try:
+                pdf = JapanesePDF()
+                logger.info(f"PDF初期化完了。使用フォント: {pdf.font_name}")
+            except Exception as e:
+                logger.error(f"PDF初期化エラー: {str(e)}")
+                raise
+
             pdf.set_auto_page_break(auto=True, margin=20)
             pdf.add_page()
 
             # タイトル
             pdf.set_japanese_font(20)
-            pdf.cell(0, 15, '議事録', ln=True, align='C')
+            pdf.cell(0, 15, '議事録', new_x="LMARGIN", new_y="NEXT", align='C')
             pdf.ln(10)
 
             # メタデータ
             pdf.set_japanese_font(9)
             pdf.set_text_color(80, 80, 80)
             meta_items = [
-                ('作成日', metadata.get('created_date', '')),
-                ('作成者', metadata.get('creator', '')),
-                ('お客様名', metadata.get('customer_name', '')),
-                ('打合せ場所', metadata.get('meeting_place', ''))
+                ('作成日', str(metadata.get('created_date', '') or '')),
+                ('作成者', str(metadata.get('creator', '') or '')),
+                ('お客様名', str(metadata.get('customer_name', '') or '')),
+                ('打合せ場所', str(metadata.get('meeting_place', '') or ''))
             ]
 
             for label, value in meta_items:
                 pdf.set_japanese_font(9)
-                pdf.cell(30, 6, f"{label}:", ln=False)
-                pdf.cell(0, 6, value, ln=True)
+                pdf.cell(30, 6, f"{label}:", new_x="RIGHT", new_y="TOP")
+                pdf.cell(0, 6, value, new_x="LMARGIN", new_y="NEXT")
 
             pdf.ln(10)
             pdf.set_text_color(0, 0, 0)
@@ -286,7 +299,7 @@ class DocumentGenerator:
             pdf.set_japanese_font(9)
             pdf.set_text_color(128, 128, 128)
             footer_text = f"作成日時: {datetime.now().strftime('%Y年%m月%d日 %H:%M')}"
-            pdf.cell(0, 6, footer_text, ln=True, align='C')
+            pdf.cell(0, 6, footer_text, new_x="LMARGIN", new_y="NEXT", align='C')
 
             # PDF保存
             pdf.output(output_path)
