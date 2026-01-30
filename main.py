@@ -394,7 +394,9 @@ async def export_minutes(
         )
 
     except Exception as e:
+        import traceback
         logger.error(f"エクスポートエラー: {str(e)}")
+        logger.error(f"スタックトレース: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"エクスポート中にエラーが発生しました: {str(e)}"

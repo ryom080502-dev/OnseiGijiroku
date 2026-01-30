@@ -47,7 +47,8 @@ class JapanesePDF(FPDF):
         for font_path, font_name in font_paths:
             if os.path.exists(font_path):
                 try:
-                    self.add_font(font_name, "", font_path, uni=True)
+                    # fpdf2 2.x系ではuni=Trueは不要（自動検出）
+                    self.add_font(font_name, fname=font_path)
                     self.font_name = font_name
                     logger.info(f"日本語フォント登録成功: {font_path}")
                     return
@@ -69,7 +70,8 @@ class JapanesePDF(FPDF):
                 if found_fonts:
                     font_path = found_fonts[0]
                     try:
-                        self.add_font("JapaneseFont", "", font_path, uni=True)
+                        # fpdf2 2.x系ではuni=Trueは不要（自動検出）
+                        self.add_font("JapaneseFont", fname=font_path)
                         self.font_name = "JapaneseFont"
                         logger.info(f"日本語フォント登録成功（glob検索）: {font_path}")
                         return
@@ -308,5 +310,7 @@ class DocumentGenerator:
             return output_path
 
         except Exception as e:
+            import traceback
             logger.error(f"PDF文書生成エラー: {str(e)}")
+            logger.error(f"スタックトレース: {traceback.format_exc()}")
             raise
