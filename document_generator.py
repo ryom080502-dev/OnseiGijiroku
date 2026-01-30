@@ -259,6 +259,10 @@ class DocumentGenerator:
 
             # 本文を処理
             lines = content.split('\n')
+            # 有効なページ幅を計算
+            effective_width = pdf.w - pdf.l_margin - pdf.r_margin
+            indent_width = 10
+
             for line in lines:
                 line = line.strip()
 
@@ -272,7 +276,7 @@ class DocumentGenerator:
                     pdf.ln(5)
                     pdf.set_japanese_font(14)
                     pdf.set_text_color(44, 62, 80)
-                    pdf.multi_cell(0, 8, heading_text)
+                    pdf.multi_cell(effective_width, 8, heading_text)
                     pdf.set_text_color(0, 0, 0)
                     pdf.ln(2)
                 elif re.match(r'^[1-9]\.\s', line):
@@ -280,7 +284,7 @@ class DocumentGenerator:
                     pdf.ln(5)
                     pdf.set_japanese_font(14)
                     pdf.set_text_color(44, 62, 80)
-                    pdf.multi_cell(0, 8, line)
+                    pdf.multi_cell(effective_width, 8, line)
                     pdf.set_text_color(0, 0, 0)
                     pdf.ln(2)
 
@@ -288,13 +292,13 @@ class DocumentGenerator:
                 elif line.startswith('・') or line.startswith('•') or line.startswith('- ') or line.startswith('* '):
                     pdf.set_japanese_font(10)
                     # インデント付きで表示
-                    pdf.set_x(pdf.l_margin + 10)
-                    pdf.multi_cell(0, 6, line)
+                    pdf.set_x(pdf.l_margin + indent_width)
+                    pdf.multi_cell(effective_width - indent_width, 6, line)
 
                 # 通常のテキスト
                 else:
                     pdf.set_japanese_font(10)
-                    pdf.multi_cell(0, 6, line)
+                    pdf.multi_cell(effective_width, 6, line)
 
             # フッター
             pdf.ln(15)
