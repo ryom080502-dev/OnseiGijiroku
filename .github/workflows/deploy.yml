@@ -38,11 +38,11 @@ jobs:
             --region $REGION \
             --platform managed \
             --allow-unauthenticated \
-            --memory 8Gi \
+            --memory 4Gi \
             --cpu 2 \
             --timeout 3600 \
-            --min-instances 1 \
-            --max-instances 5 \
+            --min-instances 0 \
+            --max-instances 10 \
             --concurrency 10 \
             --cpu-boost \
             --set-env-vars GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},GCS_BUCKET_NAME=${{ secrets.GCS_BUCKET_NAME }},GCP_PROJECT_ID=${{ secrets.GCP_PROJECT_ID }},APP_ACCESS_PASSWORD=${{ secrets.APP_ACCESS_PASSWORD }},JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}
