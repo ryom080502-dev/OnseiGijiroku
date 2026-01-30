@@ -236,59 +236,82 @@ class DocumentGenerator:
             # 有効なページ幅を計算
             effective_width = pdf.w - pdf.l_margin - pdf.r_margin
 
-            # ===== ヘッダー部分 =====
-            # タイトル背景
+            # メタデータ取得
+            created_date = str(metadata.get('created_date', '') or '')
+            creator = str(metadata.get('creator', '') or '')
+            customer_name = str(metadata.get('customer_name', '') or '')
+            meeting_place = str(metadata.get('meeting_place', '') or '')
+
+            # 日付フォーマット（ハイフンを除去）
+            date_formatted = created_date.replace('-', '')
+
+            # ===== タイトル部分 =====
+            # タイトル背景（グラデーション風に2色）
             pdf.set_fill_color(10, 22, 40)  # ダークネイビー
-            pdf.rect(pdf.l_margin, pdf.get_y(), effective_width, 18, 'F')
+            pdf.rect(pdf.l_margin, pdf.get_y(), effective_width, 22, 'F')
 
-            # タイトルテキスト
+            # アクセントライン
+            pdf.set_fill_color(37, 99, 235)  # ブルー
+            pdf.rect(pdf.l_margin, pdf.get_y(), 4, 22, 'F')
+
+            # タイトルテキスト（日付_お客様名_議事録）
+            title_text = f'{date_formatted}_{customer_name}_議事録'
             pdf.set_text_color(255, 255, 255)
-            pdf.set_japanese_font(16)
-            pdf.cell(effective_width, 18, '議 事 録', align='C')
-            pdf.ln(22)
+            pdf.set_japanese_font(14)
+            pdf.set_xy(pdf.l_margin + 12, pdf.get_y() + 6)
+            pdf.cell(effective_width - 12, 10, title_text, align='L')
+            pdf.ln(26)
 
-            # ===== メタデータテーブル =====
-            pdf.set_text_color(0, 0, 0)
+            # ===== メタデータ（モダンカード形式） =====
+            # 4列のグリッドレイアウト
+            card_width = effective_width / 4
+            card_height = 20
 
             meta_items = [
-                ('作成日', str(metadata.get('created_date', '') or '')),
-                ('作成者', str(metadata.get('creator', '') or '')),
-                ('お客様名', str(metadata.get('customer_name', '') or '')),
-                ('打合せ場所', str(metadata.get('meeting_place', '') or ''))
+                ('DATE', created_date),
+                ('AUTHOR', creator),
+                ('CLIENT', customer_name),
+                ('PLACE', meeting_place)
             ]
 
-            # テーブルヘッダー背景色
-            label_bg = (240, 240, 245)  # 薄いグレー
-            cell_height = 8
-            label_width = 35
-            value_width = (effective_width - label_width * 2) / 2
+            # 背景バー
+            pdf.set_fill_color(248, 250, 252)  # 薄いグレー背景
+            pdf.rect(pdf.l_margin, pdf.get_y(), effective_width, card_height + 4, 'F')
 
-            # 2列レイアウトでメタデータを表示
-            for i in range(0, len(meta_items), 2):
-                # 左側
-                pdf.set_fill_color(*label_bg)
+            start_y = pdf.get_y() + 2
+
+            for i, (label, value) in enumerate(meta_items):
+                x_pos = pdf.l_margin + (card_width * i) + 4
+
+                # ラベル（小さく、グレー）
+                pdf.set_xy(x_pos, start_y)
+                pdf.set_japanese_font(7)
+                pdf.set_text_color(130, 140, 160)
+                pdf.cell(card_width - 8, 4, label, align='L')
+
+                # 値（大きく、ダーク）
+                pdf.set_xy(x_pos, start_y + 5)
                 pdf.set_japanese_font(9)
-                pdf.set_text_color(80, 80, 80)
-                pdf.cell(label_width, cell_height, meta_items[i][0], border=1, fill=True, align='C')
-                pdf.set_text_color(0, 0, 0)
-                pdf.cell(value_width, cell_height, meta_items[i][1], border=1, align='L')
+                pdf.set_text_color(30, 40, 60)
 
-                # 右側
-                if i + 1 < len(meta_items):
-                    pdf.set_fill_color(*label_bg)
-                    pdf.set_text_color(80, 80, 80)
-                    pdf.cell(label_width, cell_height, meta_items[i + 1][0], border=1, fill=True, align='C')
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.cell(value_width, cell_height, meta_items[i + 1][1], border=1, align='L')
+                # 値が長い場合は切り詰め
+                display_value = value if len(value) <= 12 else value[:11] + '...'
+                pdf.cell(card_width - 8, 6, display_value, align='L')
 
-                pdf.ln(cell_height)
+                # 区切り線（最後以外）
+                if i < len(meta_items) - 1:
+                    pdf.set_draw_color(220, 225, 230)
+                    line_x = pdf.l_margin + (card_width * (i + 1))
+                    pdf.line(line_x, start_y + 2, line_x, start_y + card_height - 4)
 
-            pdf.ln(8)
+            pdf.set_y(start_y + card_height + 6)
 
             # ===== 区切り線 =====
-            pdf.set_draw_color(200, 200, 200)
+            pdf.set_draw_color(37, 99, 235)
+            pdf.set_line_width(0.5)
             pdf.line(pdf.l_margin, pdf.get_y(), pdf.l_margin + effective_width, pdf.get_y())
-            pdf.ln(8)
+            pdf.set_line_width(0.2)
+            pdf.ln(10)
 
             # ===== 本文 =====
             # Markdown記号を変換
