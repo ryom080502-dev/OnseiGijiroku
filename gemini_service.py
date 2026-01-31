@@ -163,7 +163,7 @@ class GeminiService:
                     [self.prompt, audio_file],
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.1,  # 創造性を最小限に抑えて重複を防止
-                        max_output_tokens=16000,  # 出力トークン数を適正化
+                        max_output_tokens=32000,  # 5時間の会議に対応（約45,000文字分）
                     )
                 )
                 analysis_time = time.time() - analysis_start_time
@@ -189,13 +189,15 @@ class GeminiService:
 
             # finish_reasonを確認（出力が途中で切れていないかチェック）
             finish_reason = None
+            output_truncated = False
             if response.candidates and len(response.candidates) > 0:
                 finish_reason = response.candidates[0].finish_reason
                 logger.info(f"finish_reason: {finish_reason}")
 
                 # MAX_TOKENSで終了した場合は警告
                 if str(finish_reason) == "FinishReason.MAX_TOKENS" or str(finish_reason) == "2":
-                    logger.warning("出力がmax_output_tokensに達して途中で切れた可能性があります")
+                    logger.warning("【警告】出力がmax_output_tokensに達して途中で切れました")
+                    output_truncated = True
 
             # レスポンスのパース
             result_text = response.text
