@@ -163,7 +163,7 @@ class GeminiService:
                     [self.prompt, audio_file],
                     generation_config=genai.types.GenerationConfig(
                         temperature=0.1,  # 創造性を最小限に抑えて重複を防止
-                        max_output_tokens=32000,  # 5時間の会議に対応（約45,000文字分）
+                        max_output_tokens=65536,  # Gemini 2.5 Flashの最大値（3時間超の会議に対応）
                     )
                 )
                 analysis_time = time.time() - analysis_start_time
