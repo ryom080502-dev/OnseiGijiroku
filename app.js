@@ -376,7 +376,7 @@ function convertMarkdownSymbols(text) {
 
 // 解析結果の表示
 function displayResults(result) {
-    // Markdown記号を変換してから表示　
+    // Markdown記号を変換してから表示
     const convertedSummary = convertMarkdownSymbols(result.summary);
     document.getElementById('summaryText').value = convertedSummary;
 
