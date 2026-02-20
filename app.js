@@ -7,12 +7,44 @@ const API_BASE_URL = window.location.origin.includes('localhost')
 let selectedFile = null;
 let metadata = {};
 
+// トークンの有効期限をチェック
+function isTokenExpired(token) {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        // exp はUNIXタイムスタンプ（秒）
+        return payload.exp * 1000 < Date.now();
+    } catch (e) {
+        return true;
+    }
+}
+
+// 認証切れ時のリダイレクト処理
+function handleAuthExpired() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('username');
+    alert('セッションの有効期限が切れました。再度ログインしてください。');
+    window.location.href = 'index.html';
+}
+
+// APIレスポンスの認証エラーチェック（各API呼び出しで使用）
+function checkAuthResponse(response) {
+    if (response.status === 401) {
+        handleAuthExpired();
+        throw new Error('認証エラー');
+    }
+}
+
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
-    // 認証チェック
+    // 認証チェック（トークンの存在 + 有効期限）
     const token = localStorage.getItem('access_token');
-    if (!token) {
-        window.location.href = 'index.html';
+    if (!token || isTokenExpired(token)) {
+        if (token) {
+            // トークンはあるが期限切れ
+            handleAuthExpired();
+        } else {
+            window.location.href = 'index.html';
+        }
         return;
     }
 
@@ -225,6 +257,8 @@ async function generateUploadUrl(file, token) {
         body: formData
     });
 
+    checkAuthResponse(response);
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.detail || '署名付きURLの取得に失敗しました');
@@ -285,6 +319,8 @@ async function processAudioFromGCS(blobName, token) {
         });
 
         clearTimeout(timeoutId);
+
+        checkAuthResponse(response);
 
         const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`処理完了: ${processingTime}秒`);
@@ -368,6 +404,8 @@ async function exportDocument(format) {
                 format: format
             })
         });
+
+        checkAuthResponse(response);
 
         if (!response.ok) {
             throw new Error('エクスポートに失敗しました');
