@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>議事録自動生成システム</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,11 +37,16 @@
             box-sizing: border-box;
         }
 
+        html {
+            touch-action: pan-x pan-y;
+        }
+
         body {
             font-family: 'IBM Plex Sans JP', sans-serif;
             min-height: 100vh;
             background: var(--gray-50);
             color: var(--navy-900);
+            overflow-x: hidden;
         }
 
         /* ヘッダー */
@@ -842,6 +847,18 @@
         </div>
     </main>
 
-    <script src="app.js?v=20260129c"></script>
+    <script src="app.js?v=20260220"></script>
+    <script>
+        // ピンチズーム（縮小・拡大）を無効化
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
 </body>
 </html>
